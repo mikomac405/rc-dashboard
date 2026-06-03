@@ -379,24 +379,24 @@ This repo currently uses inline startup schema creation, not SQL migration files
 
 #### Manual
 
-- [x] 2.4 Simulator logs show scouting/health terminology and no lap/pit terminology.
-- [x] 2.5 Running simulator plus backend produces multiple health states through the MQTT path.
-- [x] 2.6 Backend API returns simulator-produced healthy, unhealthy, jammed, and dead/lost_connection samples.
+- [x] 2.4 Simulator logs show scouting/health terminology and no lap/pit terminology. — 2ce3ff4
+- [x] 2.5 Running simulator plus backend produces multiple health states through the MQTT path. — 2ce3ff4
+- [x] 2.6 Backend API returns simulator-produced healthy, unhealthy, jammed, and dead/lost_connection samples. — 2ce3ff4
 
 ### Phase 3: Frontend Contract Proof Dashboard
 
 #### Automated
 
-- [ ] 3.1 Frontend build passes: `npm run build` in `frontend/`.
-- [ ] 3.2 Frontend lint passes: `npm run lint` in `frontend/`.
-- [ ] 3.3 Backend build still passes: `cargo build --manifest-path backend/Cargo.toml`
+- [x] 3.1 Frontend build passes: `npm run build` in `frontend/`.
+- [x] 3.2 Frontend lint passes: `npm run lint` in `frontend/`.
+- [x] 3.3 Backend build still passes: `cargo build --manifest-path backend/Cargo.toml`
 
 #### Manual
 
-- [ ] 3.4 Logged-in dashboard shows health/scouting terminology and no lap, race, pit, tire-wear, or stay-out terminology.
-- [ ] 3.5 Healthy, unhealthy, dead, and jammed/manual-pickup rows are visually distinguishable in the stream.
-- [ ] 3.6 Expired or missing auth still returns the user to login instead of showing telemetry.
-- [ ] 3.7 The UI remains usable at existing desktop and narrow responsive widths.
+- [x] 3.4 Logged-in dashboard shows health/scouting terminology and no lap, race, pit, tire-wear, or stay-out terminology.
+- [x] 3.5 Healthy, unhealthy, dead, and jammed/manual-pickup rows are visually distinguishable in the stream.
+- [x] 3.6 Expired or missing auth still returns the user to login instead of showing telemetry.
+- [x] 3.7 The UI remains usable at existing desktop and narrow responsive widths.
 
 ### Phase 4: End-to-End Verification and Docs Alignment
 

@@ -5,13 +5,23 @@ import './App.css'
 const TOKEN_STORAGE_KEY = 'rc-smart-pit-stop-token'
 
 type TelemetryReading = {
-  car_id: string
-  lap: number
-  tire_wear: number
-  battery_temp_c: number
+  vehicle_id: string
+  health_state: 'healthy' | 'unhealthy' | 'dead'
+  health_reason:
+    | 'none'
+    | 'low_battery'
+    | 'overheated_motor'
+    | 'speed_mismatch'
+    | 'jammed'
+    | 'lost_connection'
+  battery_percent: number
+  heartbeat_age_ms: number
   motor_temp_c: number
-  speed_kph: number
-  pit_recommended: boolean
+  commanded_speed_kph: number
+  actual_speed_kph: number
+  jam_detected: boolean
+  mission_area: string
+  manual_pickup_required: boolean
   timestamp_ms: number
 }
 
@@ -183,8 +193,12 @@ function App() {
   }, [authView, session])
 
   const latest = readings[0]
-  const pitCount = useMemo(
-    () => readings.filter((reading) => reading.pit_recommended).length,
+  const manualPickupCount = useMemo(
+    () => readings.filter((reading) => reading.manual_pickup_required).length,
+    [readings],
+  )
+  const deadCount = useMemo(
+    () => readings.filter((reading) => reading.health_state === 'dead').length,
     [readings],
   )
 
@@ -261,8 +275,8 @@ function App() {
     <main className="dashboard">
       <header className="topbar">
         <div>
-          <p className="eyebrow">RC Smart Pit-Stop</p>
-          <h1>Race Control</h1>
+          <p className="eyebrow">RC Scout Dashboard</p>
+          <h1>Health Telemetry</h1>
         </div>
         <div className="session-tools">
           <span className={`status ${status}`}>{status}</span>
@@ -273,56 +287,84 @@ function App() {
       </header>
 
       <section className="summary-grid">
-        <Metric label="Current car" value={latest?.car_id ?? 'waiting'} />
-        <Metric label="Lap" value={latest?.lap.toString() ?? '-'} />
+        <Metric label="Current vehicle" value={latest?.vehicle_id ?? 'waiting'} />
         <Metric
-          label="Speed"
-          value={latest ? `${latest.speed_kph.toFixed(1)} kph` : '-'}
+          label="Health state"
+          value={latest ? formatLabel(latest.health_state) : '-'}
+          tone={healthMetricTone(latest)}
         />
-        <Metric label="Pit alerts" value={pitCount.toString()} tone="alert" />
+        <Metric
+          label="Manual pickups"
+          value={manualPickupCount.toString()}
+          tone={manualPickupCount > 0 ? 'critical' : undefined}
+        />
+        <Metric
+          label="Mission area"
+          value={latest?.mission_area ?? '-'}
+          meta={deadCount > 0 ? `${deadCount} dead` : undefined}
+        />
       </section>
 
       <section className="telemetry-panel">
         <div className="panel-heading">
-          <h2>Telemetry Stream</h2>
+          <h2>Health Stream</h2>
           <span>{readings.length} samples</span>
         </div>
         <div className="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>Car</th>
-                <th>Lap</th>
-                <th>Tire wear</th>
+                <th>Vehicle</th>
+                <th>Area</th>
+                <th>State</th>
+                <th>Reason</th>
                 <th>Battery</th>
                 <th>Motor</th>
                 <th>Speed</th>
-                <th>Call</th>
+                <th>Heartbeat</th>
+                <th>Jam</th>
+                <th>Pickup</th>
+                <th>Sample</th>
               </tr>
             </thead>
             <tbody>
               {readings.length === 0 ? (
                 <tr>
-                  <td colSpan={7}>Waiting for simulator telemetry</td>
+                  <td colSpan={11}>Waiting for simulator telemetry</td>
                 </tr>
               ) : (
                 readings.slice(0, 12).map((reading) => (
-                  <tr key={`${reading.car_id}-${reading.timestamp_ms}`}>
-                    <td>{reading.car_id}</td>
-                    <td>{reading.lap}</td>
-                    <td>{reading.tire_wear.toFixed(1)}%</td>
-                    <td>{reading.battery_temp_c.toFixed(1)}C</td>
-                    <td>{reading.motor_temp_c.toFixed(1)}C</td>
-                    <td>{reading.speed_kph.toFixed(1)}</td>
+                  <tr key={`${reading.vehicle_id}-${reading.timestamp_ms}`}>
+                    <td>{reading.vehicle_id}</td>
+                    <td>{reading.mission_area}</td>
                     <td>
-                      <span
-                        className={
-                          reading.pit_recommended ? 'call pit' : 'call stay'
-                        }
-                      >
-                        {reading.pit_recommended ? 'Pit' : 'Stay out'}
+                      <span className={`state-badge ${reading.health_state}`}>
+                        {formatLabel(reading.health_state)}
                       </span>
                     </td>
+                    <td>{formatLabel(reading.health_reason)}</td>
+                    <td>{reading.battery_percent.toFixed(1)}%</td>
+                    <td>{reading.motor_temp_c.toFixed(1)}C</td>
+                    <td>
+                      <span className="speed-pair">
+                        {reading.commanded_speed_kph.toFixed(1)} cmd
+                        <span>{reading.actual_speed_kph.toFixed(1)} actual</span>
+                      </span>
+                    </td>
+                    <td>{formatDuration(reading.heartbeat_age_ms)}</td>
+                    <td>
+                      <span className={`flag ${reading.jam_detected ? 'jammed' : ''}`}>
+                        {reading.jam_detected ? 'Jammed' : 'Clear'}
+                      </span>
+                    </td>
+                    <td>
+                      <span
+                        className={`flag ${reading.manual_pickup_required ? 'pickup' : ''}`}
+                      >
+                        {reading.manual_pickup_required ? 'Required' : 'No'}
+                      </span>
+                    </td>
+                    <td>{formatSampleTime(reading.timestamp_ms)}</td>
                   </tr>
                 ))
               )}
@@ -342,17 +384,55 @@ function Metric({
   label,
   value,
   tone,
+  meta,
 }: {
   label: string
   value: string
-  tone?: 'alert'
+  tone?: 'alert' | 'critical'
+  meta?: string
 }) {
   return (
     <article className={`metric ${tone ?? ''}`}>
       <span>{label}</span>
       <strong>{value}</strong>
+      {meta ? <small>{meta}</small> : null}
     </article>
   )
+}
+
+function formatLabel(value: string) {
+  return value
+    .split('_')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ')
+}
+
+function healthMetricTone(reading?: TelemetryReading) {
+  if (reading?.health_state === 'dead') {
+    return 'critical'
+  }
+
+  if (reading?.health_state === 'unhealthy') {
+    return 'alert'
+  }
+
+  return undefined
+}
+
+function formatDuration(milliseconds: number) {
+  if (milliseconds >= 1000) {
+    return `${(milliseconds / 1000).toFixed(1)}s`
+  }
+
+  return `${milliseconds.toFixed(0)}ms`
+}
+
+function formatSampleTime(timestampMs: number) {
+  return new Date(timestampMs).toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  })
 }
 
 async function postJson<T>(url: string, body: unknown, token?: string): Promise<T> {
