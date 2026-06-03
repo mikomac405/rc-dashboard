@@ -379,9 +379,9 @@ This repo currently uses inline startup schema creation, not SQL migration files
 
 #### Manual
 
-- [ ] 2.4 Simulator logs show scouting/health terminology and no lap/pit terminology.
-- [ ] 2.5 Running simulator plus backend produces multiple health states through the MQTT path.
-- [ ] 2.6 Backend API returns simulator-produced healthy, unhealthy, jammed, and dead/lost_connection samples.
+- [x] 2.4 Simulator logs show scouting/health terminology and no lap/pit terminology.
+- [x] 2.5 Running simulator plus backend produces multiple health states through the MQTT path.
+- [x] 2.6 Backend API returns simulator-produced healthy, unhealthy, jammed, and dead/lost_connection samples.
 
 ### Phase 3: Frontend Contract Proof Dashboard
 
