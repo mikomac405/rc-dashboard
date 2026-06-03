@@ -5,6 +5,7 @@ services:
     environment:
       API_HOST: 0.0.0.0
       API_PORT: 3000
+      AUTH_SIGNING_SECRET: local-dev-change-me-minimal-login-gate
       DATABASE_URL: postgres://rc_dashboard:rc_dashboard@postgres:5432/rc_dashboard
       MQTT_HOST: mqtt
       MQTT_PORT: 1883

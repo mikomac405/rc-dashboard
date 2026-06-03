@@ -301,28 +301,28 @@ If Postgres is unavailable, auth is unavailable by design. This is a deliberate 
 
 #### Automated
 
-- [x] 2.1 Frontend build passes: `npm run build` in `frontend/`.
-- [x] 2.2 Frontend lint passes: `npm run lint` in `frontend/`.
+- [x] 2.1 Frontend build passes: `npm run build` in `frontend/`. — db6d71a
+- [x] 2.2 Frontend lint passes: `npm run lint` in `frontend/`. — db6d71a
 
 #### Manual
 
-- [x] 2.3 Visiting the frontend without a token shows the login form instead of telemetry.
-- [x] 2.4 Logging in with first-run `admin:admin` shows the password-change screen, not the dashboard.
-- [x] 2.5 Changing the password transitions to the dashboard and telemetry loads.
-- [x] 2.6 Logout clears the token and returns to login.
-- [x] 2.7 Expired or invalid token behavior clears the session and returns to login.
+- [x] 2.3 Visiting the frontend without a token shows the login form instead of telemetry. — db6d71a
+- [x] 2.4 Logging in with first-run `admin:admin` shows the password-change screen, not the dashboard. — db6d71a
+- [x] 2.5 Changing the password transitions to the dashboard and telemetry loads. — db6d71a
+- [x] 2.6 Logout clears the token and returns to login. — db6d71a
+- [x] 2.7 Expired or invalid token behavior clears the session and returns to login. — db6d71a
 
 ### Phase 3: Config, Verification, and Documentation Alignment
 
 #### Automated
 
-- [ ] 3.1 Backend build passes: `cargo build --manifest-path backend/Cargo.toml`
-- [ ] 3.2 Backend tests pass: `cargo test --manifest-path backend/Cargo.toml`
-- [ ] 3.3 Frontend build passes: `npm run build` in `frontend/`.
-- [ ] 3.4 Frontend lint passes: `npm run lint` in `frontend/`.
+- [x] 3.1 Backend build passes: `cargo build --manifest-path backend/Cargo.toml`
+- [x] 3.2 Backend tests pass: `cargo test --manifest-path backend/Cargo.toml`
+- [x] 3.3 Frontend build passes: `npm run build` in `frontend/`.
+- [x] 3.4 Frontend lint passes: `npm run lint` in `frontend/`.
 
 #### Manual
 
-- [ ] 3.5 Full local stack still starts with `docker compose up --build`.
-- [ ] 3.6 Browser flow verifies login, forced password change, telemetry access, logout, and token-expiry/invalid-token recovery.
-- [ ] 3.7 Public `/health` and unauthenticated `GET /api/telemetry` behavior are verified with curl or browser dev tools.
+- [x] 3.5 Full local stack still starts with `docker compose up --build`.
+- [x] 3.6 Browser flow verifies login, forced password change, telemetry access, logout, and token-expiry/invalid-token recovery.
+- [x] 3.7 Public `/health` and unauthenticated `GET /api/telemetry` behavior are verified with curl or browser dev tools.
