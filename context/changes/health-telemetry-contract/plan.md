@@ -387,27 +387,27 @@ This repo currently uses inline startup schema creation, not SQL migration files
 
 #### Automated
 
-- [x] 3.1 Frontend build passes: `npm run build` in `frontend/`.
-- [x] 3.2 Frontend lint passes: `npm run lint` in `frontend/`.
-- [x] 3.3 Backend build still passes: `cargo build --manifest-path backend/Cargo.toml`
+- [x] 3.1 Frontend build passes: `npm run build` in `frontend/`. — 4fb91b0
+- [x] 3.2 Frontend lint passes: `npm run lint` in `frontend/`. — 4fb91b0
+- [x] 3.3 Backend build still passes: `cargo build --manifest-path backend/Cargo.toml` — 4fb91b0
 
 #### Manual
 
-- [x] 3.4 Logged-in dashboard shows health/scouting terminology and no lap, race, pit, tire-wear, or stay-out terminology.
-- [x] 3.5 Healthy, unhealthy, dead, and jammed/manual-pickup rows are visually distinguishable in the stream.
-- [x] 3.6 Expired or missing auth still returns the user to login instead of showing telemetry.
-- [x] 3.7 The UI remains usable at existing desktop and narrow responsive widths.
+- [x] 3.4 Logged-in dashboard shows health/scouting terminology and no lap, race, pit, tire-wear, or stay-out terminology. — 4fb91b0
+- [x] 3.5 Healthy, unhealthy, dead, and jammed/manual-pickup rows are visually distinguishable in the stream. — 4fb91b0
+- [x] 3.6 Expired or missing auth still returns the user to login instead of showing telemetry. — 4fb91b0
+- [x] 3.7 The UI remains usable at existing desktop and narrow responsive widths. — 4fb91b0
 
 ### Phase 4: End-to-End Verification and Docs Alignment
 
 #### Automated
 
-- [ ] 4.1 Backend build passes: `cargo build --manifest-path backend/Cargo.toml`
-- [ ] 4.2 Backend tests pass: `cargo test --manifest-path backend/Cargo.toml`
-- [ ] 4.3 Simulator build passes: `cargo build --manifest-path simulator/Cargo.toml`
-- [ ] 4.4 Simulator tests pass if present: `cargo test --manifest-path simulator/Cargo.toml`
-- [ ] 4.5 Frontend build passes: `npm run build` in `frontend/`.
-- [ ] 4.6 Frontend lint passes: `npm run lint` in `frontend/`.
+- [x] 4.1 Backend build passes: `cargo build --manifest-path backend/Cargo.toml`
+- [x] 4.2 Backend tests pass: `cargo test --manifest-path backend/Cargo.toml`
+- [x] 4.3 Simulator build passes: `cargo build --manifest-path simulator/Cargo.toml`
+- [x] 4.4 Simulator tests pass if present: `cargo test --manifest-path simulator/Cargo.toml`
+- [x] 4.5 Frontend build passes: `npm run build` in `frontend/`.
+- [x] 4.6 Frontend lint passes: `npm run lint` in `frontend/`.
 
 #### Manual
 
