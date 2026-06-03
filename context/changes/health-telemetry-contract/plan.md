@@ -355,27 +355,27 @@ This repo currently uses inline startup schema creation, not SQL migration files
 
 #### Automated
 
-- [x] 1.1 Backend compiles: `cargo build --manifest-path backend/Cargo.toml`
-- [x] 1.2 Backend tests pass: `cargo test --manifest-path backend/Cargo.toml`
-- [x] 1.3 Backend tests prove stale heartbeat produces dead/lost_connection/manual pickup.
-- [x] 1.4 Backend tests prove a known vehicle with no fresh messages is surfaced as dead/lost_connection/manual pickup.
-- [x] 1.5 Backend tests prove jam detection produces unhealthy/jammed/manual pickup.
-- [x] 1.6 Existing route boundary tests still prove `GET /api/telemetry` rejects missing bearer tokens, `POST /api/telemetry` is not an ingest route, and `/health` remains public.
+- [x] 1.1 Backend compiles: `cargo build --manifest-path backend/Cargo.toml` — 69109e8
+- [x] 1.2 Backend tests pass: `cargo test --manifest-path backend/Cargo.toml` — 69109e8
+- [x] 1.3 Backend tests prove stale heartbeat produces dead/lost_connection/manual pickup. — 69109e8
+- [x] 1.4 Backend tests prove a known vehicle with no fresh messages is surfaced as dead/lost_connection/manual pickup. — 69109e8
+- [x] 1.5 Backend tests prove jam detection produces unhealthy/jammed/manual pickup. — 69109e8
+- [x] 1.6 Existing route boundary tests still prove `GET /api/telemetry` rejects missing bearer tokens, `POST /api/telemetry` is not an ingest route, and `/health` remains public. — 69109e8
 
 #### Manual
 
-- [x] 1.7 A sample POST to `/api/simulator/ingest` with new contract fields is accepted by the backend.
-- [x] 1.8 Protected `GET /api/telemetry` returns new contract field names and no race-only fields.
-- [x] 1.9 Protected `GET /api/telemetry` can surface a dead/lost_connection/manual-pickup state for a known vehicle after message freshness expires.
-- [x] 1.10 Local database schema behavior is understood: either existing volumes migrate cleanly or the reset step is documented before implementation proceeds.
+- [x] 1.7 A sample POST to `/api/simulator/ingest` with new contract fields is accepted by the backend. — 69109e8
+- [x] 1.8 Protected `GET /api/telemetry` returns new contract field names and no race-only fields. — 69109e8
+- [x] 1.9 Protected `GET /api/telemetry` can surface a dead/lost_connection/manual-pickup state for a known vehicle after message freshness expires. — 69109e8
+- [x] 1.10 Local database schema behavior is understood: either existing volumes migrate cleanly or the reset step is documented before implementation proceeds. — 69109e8
 
 ### Phase 2: Simulator Health Scenarios
 
 #### Automated
 
-- [x] 2.1 Simulator compiles: `cargo build --manifest-path simulator/Cargo.toml`
-- [x] 2.2 Simulator tests pass if testable helpers are added: `cargo test --manifest-path simulator/Cargo.toml`
-- [x] 2.3 Backend still compiles after simulator/backend contract alignment: `cargo build --manifest-path backend/Cargo.toml`
+- [x] 2.1 Simulator compiles: `cargo build --manifest-path simulator/Cargo.toml` — 69109e8
+- [x] 2.2 Simulator tests pass if testable helpers are added: `cargo test --manifest-path simulator/Cargo.toml` — 69109e8
+- [x] 2.3 Backend still compiles after simulator/backend contract alignment: `cargo build --manifest-path backend/Cargo.toml` — 69109e8
 
 #### Manual
 
