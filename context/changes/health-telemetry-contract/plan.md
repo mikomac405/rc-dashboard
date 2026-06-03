@@ -402,16 +402,16 @@ This repo currently uses inline startup schema creation, not SQL migration files
 
 #### Automated
 
-- [x] 4.1 Backend build passes: `cargo build --manifest-path backend/Cargo.toml`
-- [x] 4.2 Backend tests pass: `cargo test --manifest-path backend/Cargo.toml`
-- [x] 4.3 Simulator build passes: `cargo build --manifest-path simulator/Cargo.toml`
-- [x] 4.4 Simulator tests pass if present: `cargo test --manifest-path simulator/Cargo.toml`
-- [x] 4.5 Frontend build passes: `npm run build` in `frontend/`.
-- [x] 4.6 Frontend lint passes: `npm run lint` in `frontend/`.
+- [x] 4.1 Backend build passes: `cargo build --manifest-path backend/Cargo.toml` — 399569e
+- [x] 4.2 Backend tests pass: `cargo test --manifest-path backend/Cargo.toml` — 399569e
+- [x] 4.3 Simulator build passes: `cargo build --manifest-path simulator/Cargo.toml` — 399569e
+- [x] 4.4 Simulator tests pass if present: `cargo test --manifest-path simulator/Cargo.toml` — 399569e
+- [x] 4.5 Frontend build passes: `npm run build` in `frontend/`. — 399569e
+- [x] 4.6 Frontend lint passes: `npm run lint` in `frontend/`. — 399569e
 
 #### Manual
 
-- [ ] 4.7 `docker compose up --build` starts backend, frontend, simulator, Postgres, and MQTT with the new contract.
-- [ ] 4.8 After login, the dashboard receives simulator readings through MQTT/backend/API and shows health states, reasons, mission areas, and manual-pickup flags.
-- [ ] 4.9 A stale-heartbeat simulator case appears as dead/lost_connection/manual pickup in the dashboard.
-- [ ] 4.10 `AGENTS.md` and environment docs no longer imply the old race/pit contract.
+- [x] 4.7 `docker compose up --build` starts backend, frontend, simulator, Postgres, and MQTT with the new contract. — 399569e
+- [x] 4.8 After login, the dashboard receives simulator readings through MQTT/backend/API and shows health states, reasons, mission areas, and manual-pickup flags. — 399569e
+- [x] 4.9 A stale-heartbeat simulator case appears as dead/lost_connection/manual pickup in the dashboard. — 399569e
+- [x] 4.10 `AGENTS.md` and environment docs no longer imply the old race/pit contract. — 399569e
