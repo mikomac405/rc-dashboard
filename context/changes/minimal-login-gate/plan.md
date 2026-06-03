@@ -282,35 +282,35 @@ If Postgres is unavailable, auth is unavailable by design. This is a deliberate 
 
 #### Automated
 
-- [x] 1.1 Backend compiles: `cargo build --manifest-path backend/Cargo.toml`
-- [x] 1.2 Backend auth tests pass: `cargo test --manifest-path backend/Cargo.toml`
-- [x] 1.3 `GET /api/telemetry` rejects requests without a normal bearer token in backend tests.
-- [x] 1.4 First-run `admin:admin` login returns password-change-required state in backend tests.
-- [x] 1.5 Password change clears the forced-change flag and returns a normal bearer token in backend tests.
-- [x] 1.6 Auth handlers return an unavailable response when Postgres/auth storage is unavailable in backend tests or documented smoke coverage.
+- [x] 1.1 Backend compiles: `cargo build --manifest-path backend/Cargo.toml` — 005d2c2
+- [x] 1.2 Backend auth tests pass: `cargo test --manifest-path backend/Cargo.toml` — 005d2c2
+- [x] 1.3 `GET /api/telemetry` rejects requests without a normal bearer token in backend tests. — 005d2c2
+- [x] 1.4 First-run `admin:admin` login returns password-change-required state in backend tests. — 005d2c2
+- [x] 1.5 Password change clears the forced-change flag and returns a normal bearer token in backend tests. — 005d2c2
+- [x] 1.6 Auth handlers return an unavailable response when Postgres/auth storage is unavailable in backend tests or documented smoke coverage. — 005d2c2
 
 #### Manual
 
-- [x] 1.7 With Postgres available, `admin:admin` can log in only far enough to change the password.
-- [x] 1.8 After password change, a normal token can access `GET /api/telemetry`.
-- [x] 1.9 Missing or invalid tokens cannot access `GET /api/telemetry`.
-- [x] 1.10 `/health` remains publicly reachable.
-- [x] 1.11 Simulator or MQTT telemetry ingestion still runs without fleet-manager credentials.
+- [x] 1.7 With Postgres available, `admin:admin` can log in only far enough to change the password. — 005d2c2
+- [x] 1.8 After password change, a normal token can access `GET /api/telemetry`. — 005d2c2
+- [x] 1.9 Missing or invalid tokens cannot access `GET /api/telemetry`. — 005d2c2
+- [x] 1.10 `/health` remains publicly reachable. — 005d2c2
+- [x] 1.11 Simulator or MQTT telemetry ingestion still runs without fleet-manager credentials. — 005d2c2
 
 ### Phase 2: Frontend Login Gate
 
 #### Automated
 
-- [ ] 2.1 Frontend build passes: `npm run build` in `frontend/`.
-- [ ] 2.2 Frontend lint passes: `npm run lint` in `frontend/`.
+- [x] 2.1 Frontend build passes: `npm run build` in `frontend/`.
+- [x] 2.2 Frontend lint passes: `npm run lint` in `frontend/`.
 
 #### Manual
 
-- [ ] 2.3 Visiting the frontend without a token shows the login form instead of telemetry.
-- [ ] 2.4 Logging in with first-run `admin:admin` shows the password-change screen, not the dashboard.
-- [ ] 2.5 Changing the password transitions to the dashboard and telemetry loads.
-- [ ] 2.6 Logout clears the token and returns to login.
-- [ ] 2.7 Expired or invalid token behavior clears the session and returns to login.
+- [x] 2.3 Visiting the frontend without a token shows the login form instead of telemetry.
+- [x] 2.4 Logging in with first-run `admin:admin` shows the password-change screen, not the dashboard.
+- [x] 2.5 Changing the password transitions to the dashboard and telemetry loads.
+- [x] 2.6 Logout clears the token and returns to login.
+- [x] 2.7 Expired or invalid token behavior clears the session and returns to login.
 
 ### Phase 3: Config, Verification, and Documentation Alignment
 

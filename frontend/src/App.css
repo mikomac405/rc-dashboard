@@ -1,3 +1,89 @@
+.auth-page {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  min-height: 100svh;
+  padding: 32px;
+}
+
+.auth-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  gap: 18px;
+  max-width: 420px;
+  padding: 28px;
+  width: 100%;
+}
+
+.auth-heading {
+  display: grid;
+  gap: 4px;
+}
+
+.auth-panel label {
+  display: grid;
+  gap: 8px;
+}
+
+.auth-panel label span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.auth-panel input {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font: inherit;
+  min-height: 44px;
+  padding: 10px 12px;
+  width: 100%;
+}
+
+.auth-panel input:focus {
+  border-color: var(--text-h);
+  outline: 2px solid transparent;
+}
+
+.auth-message {
+  color: var(--warn);
+  font-size: 14px;
+}
+
+.auth-actions,
+.session-tools {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+}
+
+button {
+  background: var(--text-h);
+  border: 1px solid var(--text-h);
+  border-radius: 6px;
+  color: var(--surface);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  min-height: 40px;
+  padding: 9px 14px;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.68;
+}
+
+button.secondary {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--text);
+}
+
 .dashboard {
   min-height: 100svh;
   padding: 32px;
@@ -140,6 +226,10 @@ td {
   .topbar {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .session-tools {
+    flex-wrap: wrap;
   }
 
   .summary-grid {
