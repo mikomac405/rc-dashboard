@@ -1,5 +1,5 @@
 use std::{
-    collections::VecDeque,
+    collections::{HashSet, VecDeque},
     env,
     net::SocketAddr,
     sync::{Arc, RwLock},
@@ -32,6 +32,10 @@ const SESSION_TTL_SECONDS: u64 = 8 * 60 * 60;
 const LOCAL_AUTH_SECRET: &str = "local-dev-change-me-minimal-login-gate";
 const FIRST_RUN_USERNAME: &str = "admin";
 const FIRST_RUN_PASSWORD: &str = "admin";
+const STALE_HEARTBEAT_MS: u128 = 45_000;
+const LOW_BATTERY_PERCENT: f32 = 20.0;
+const OVERHEATED_MOTOR_TEMP_C: f32 = 85.0;
+const SPEED_MISMATCH_KPH: f32 = 5.0;
 
 type HmacSha256 = Hmac<Sha256>;
 
@@ -59,14 +63,37 @@ impl AuthConfig {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 struct TelemetryReading {
-    car_id: String,
-    lap: u32,
-    tire_wear: f32,
-    battery_temp_c: f32,
+    vehicle_id: String,
+    health_state: HealthState,
+    health_reason: HealthReason,
+    battery_percent: f32,
+    heartbeat_age_ms: u128,
     motor_temp_c: f32,
-    speed_kph: f32,
-    pit_recommended: bool,
+    commanded_speed_kph: f32,
+    actual_speed_kph: f32,
+    jam_detected: bool,
+    mission_area: String,
+    manual_pickup_required: bool,
     timestamp_ms: u128,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+enum HealthState {
+    Healthy,
+    Unhealthy,
+    Dead,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+enum HealthReason {
+    None,
+    LowBattery,
+    OverheatedMotor,
+    SpeedMismatch,
+    Jammed,
+    LostConnection,
 }
 
 #[derive(Debug)]
@@ -182,7 +209,9 @@ fn build_app(state: AppState) -> Router {
         .route("/api/auth/login", post(login))
         .route("/api/auth/change-password", post(change_password))
         .route("/api/auth/me", get(auth_me))
-        .route("/api/telemetry", get(list_telemetry).post(record_telemetry))
+        .route("/api/telemetry", get(list_telemetry))
+        // Explicit HTTP ingest exists for manual and automated contract tests.
+        // The normal telemetry path is simulator -> MQTT -> backend consumer.
         .route("/api/simulator/ingest", post(record_telemetry))
         .layer(CorsLayer::permissive())
         .with_state(state)
@@ -264,7 +293,7 @@ async fn list_telemetry(
 
     if let Some(db) = &state.db {
         match load_recent_readings(db).await {
-            Ok(readings) => return Ok(Json(readings)),
+            Ok(readings) => return Ok(Json(apply_freshness_states(readings, now_ms()))),
             Err(error) => eprintln!("database read failed, falling back to memory: {error}"),
         }
     } else {
@@ -272,13 +301,17 @@ async fn list_telemetry(
     }
 
     let readings = state.readings.read().expect("read telemetry state");
-    Ok(Json(readings.iter().cloned().collect()))
+    Ok(Json(apply_freshness_states(
+        readings.iter().cloned().collect(),
+        now_ms(),
+    )))
 }
 
 async fn record_telemetry(
     State(state): State<AppState>,
-    Json(reading): Json<TelemetryReading>,
+    Json(mut reading): Json<TelemetryReading>,
 ) -> StatusCode {
+    normalize_reading(&mut reading);
     persist_reading(&state, reading).await;
     StatusCode::ACCEPTED
 }
@@ -310,17 +343,23 @@ async fn connect_database() -> Option<PgPool> {
 }
 
 async fn migrate_database(pool: &PgPool) -> Result<(), String> {
+    rebuild_old_telemetry_schema(pool).await?;
+
     sqlx::query(
         r#"
         CREATE TABLE IF NOT EXISTS telemetry_readings (
             id BIGSERIAL PRIMARY KEY,
-            car_id TEXT NOT NULL,
-            lap INTEGER NOT NULL,
-            tire_wear REAL NOT NULL,
-            battery_temp_c REAL NOT NULL,
+            vehicle_id TEXT NOT NULL,
+            health_state TEXT NOT NULL,
+            health_reason TEXT NOT NULL,
+            battery_percent REAL NOT NULL,
+            heartbeat_age_ms BIGINT NOT NULL,
             motor_temp_c REAL NOT NULL,
-            speed_kph REAL NOT NULL,
-            pit_recommended BOOLEAN NOT NULL,
+            commanded_speed_kph REAL NOT NULL,
+            actual_speed_kph REAL NOT NULL,
+            jam_detected BOOLEAN NOT NULL,
+            mission_area TEXT NOT NULL,
+            manual_pickup_required BOOLEAN NOT NULL,
             timestamp_ms BIGINT NOT NULL,
             created_at TIMESTAMPTZ NOT NULL DEFAULT now()
         )
@@ -357,6 +396,51 @@ async fn migrate_database(pool: &PgPool) -> Result<(), String> {
     .map_err(|error| error.to_string())?;
 
     seed_first_run_admin(pool).await?;
+
+    Ok(())
+}
+
+async fn rebuild_old_telemetry_schema(pool: &PgPool) -> Result<(), String> {
+    let has_telemetry_table = sqlx::query(
+        r#"
+        SELECT EXISTS (
+            SELECT 1
+            FROM information_schema.tables
+            WHERE table_schema = 'public' AND table_name = 'telemetry_readings'
+        ) AS table_exists
+        "#,
+    )
+    .fetch_one(pool)
+    .await
+    .map_err(|error| error.to_string())?
+    .get::<bool, _>("table_exists");
+
+    if !has_telemetry_table {
+        return Ok(());
+    }
+
+    let has_vehicle_id = sqlx::query(
+        r#"
+        SELECT EXISTS (
+            SELECT 1
+            FROM information_schema.columns
+            WHERE table_schema = 'public'
+              AND table_name = 'telemetry_readings'
+              AND column_name = 'vehicle_id'
+        ) AS column_exists
+        "#,
+    )
+    .fetch_one(pool)
+    .await
+    .map_err(|error| error.to_string())?
+    .get::<bool, _>("column_exists");
+
+    if !has_vehicle_id {
+        sqlx::query("DROP TABLE telemetry_readings")
+            .execute(pool)
+            .await
+            .map_err(|error| error.to_string())?;
+    }
 
     Ok(())
 }
@@ -433,8 +517,10 @@ async fn update_fleet_manager_password(
 async fn load_recent_readings(pool: &PgPool) -> Result<Vec<TelemetryReading>, sqlx::Error> {
     let rows = sqlx::query(
         r#"
-        SELECT car_id, lap, tire_wear, battery_temp_c, motor_temp_c, speed_kph,
-               pit_recommended, timestamp_ms
+        SELECT vehicle_id, health_state, health_reason, battery_percent,
+               heartbeat_age_ms, motor_temp_c, commanded_speed_kph,
+               actual_speed_kph, jam_detected, mission_area,
+               manual_pickup_required, timestamp_ms
         FROM telemetry_readings
         ORDER BY timestamp_ms DESC
         LIMIT $1
@@ -447,13 +533,17 @@ async fn load_recent_readings(pool: &PgPool) -> Result<Vec<TelemetryReading>, sq
     Ok(rows
         .into_iter()
         .map(|row| TelemetryReading {
-            car_id: row.get("car_id"),
-            lap: row.get::<i32, _>("lap") as u32,
-            tire_wear: row.get("tire_wear"),
-            battery_temp_c: row.get("battery_temp_c"),
+            vehicle_id: row.get("vehicle_id"),
+            health_state: parse_health_state(row.get("health_state")),
+            health_reason: parse_health_reason(row.get("health_reason")),
+            battery_percent: row.get("battery_percent"),
+            heartbeat_age_ms: row.get::<i64, _>("heartbeat_age_ms") as u128,
             motor_temp_c: row.get("motor_temp_c"),
-            speed_kph: row.get("speed_kph"),
-            pit_recommended: row.get("pit_recommended"),
+            commanded_speed_kph: row.get("commanded_speed_kph"),
+            actual_speed_kph: row.get("actual_speed_kph"),
+            jam_detected: row.get("jam_detected"),
+            mission_area: row.get("mission_area"),
+            manual_pickup_required: row.get("manual_pickup_required"),
             timestamp_ms: row.get::<i64, _>("timestamp_ms") as u128,
         })
         .collect())
@@ -463,24 +553,139 @@ async fn insert_reading(pool: &PgPool, reading: &TelemetryReading) -> Result<(),
     sqlx::query(
         r#"
         INSERT INTO telemetry_readings (
-            car_id, lap, tire_wear, battery_temp_c, motor_temp_c, speed_kph,
-            pit_recommended, timestamp_ms
+            vehicle_id, health_state, health_reason, battery_percent,
+            heartbeat_age_ms, motor_temp_c, commanded_speed_kph,
+            actual_speed_kph, jam_detected, mission_area, manual_pickup_required,
+            timestamp_ms
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
         "#,
     )
-    .bind(&reading.car_id)
-    .bind(reading.lap as i32)
-    .bind(reading.tire_wear)
-    .bind(reading.battery_temp_c)
+    .bind(&reading.vehicle_id)
+    .bind(health_state_name(reading.health_state))
+    .bind(health_reason_name(reading.health_reason))
+    .bind(reading.battery_percent)
+    .bind(reading.heartbeat_age_ms as i64)
     .bind(reading.motor_temp_c)
-    .bind(reading.speed_kph)
-    .bind(reading.pit_recommended)
+    .bind(reading.commanded_speed_kph)
+    .bind(reading.actual_speed_kph)
+    .bind(reading.jam_detected)
+    .bind(&reading.mission_area)
+    .bind(reading.manual_pickup_required)
     .bind(reading.timestamp_ms as i64)
     .execute(pool)
     .await?;
 
     Ok(())
+}
+
+fn normalize_reading(reading: &mut TelemetryReading) {
+    let (state, reason, manual_pickup_required) = evaluate_health(reading);
+    reading.health_state = state;
+    reading.health_reason = reason;
+    reading.manual_pickup_required = manual_pickup_required;
+}
+
+fn evaluate_health(reading: &TelemetryReading) -> (HealthState, HealthReason, bool) {
+    if reading.heartbeat_age_ms >= STALE_HEARTBEAT_MS {
+        return (HealthState::Dead, HealthReason::LostConnection, true);
+    }
+
+    if reading.jam_detected {
+        return (HealthState::Unhealthy, HealthReason::Jammed, true);
+    }
+
+    if reading.battery_percent <= LOW_BATTERY_PERCENT {
+        return (HealthState::Unhealthy, HealthReason::LowBattery, false);
+    }
+
+    if reading.motor_temp_c >= OVERHEATED_MOTOR_TEMP_C {
+        return (HealthState::Unhealthy, HealthReason::OverheatedMotor, false);
+    }
+
+    if speed_mismatch(reading) >= SPEED_MISMATCH_KPH {
+        return (HealthState::Unhealthy, HealthReason::SpeedMismatch, false);
+    }
+
+    (HealthState::Healthy, HealthReason::None, false)
+}
+
+fn apply_freshness_states(
+    mut readings: Vec<TelemetryReading>,
+    now_ms: u128,
+) -> Vec<TelemetryReading> {
+    let mut seen_vehicles = HashSet::new();
+    let mut synthesized_dead = Vec::new();
+
+    for reading in &readings {
+        if !seen_vehicles.insert(reading.vehicle_id.clone()) {
+            continue;
+        }
+
+        if reading.health_state == HealthState::Dead {
+            continue;
+        }
+
+        if now_ms.saturating_sub(reading.timestamp_ms) >= STALE_HEARTBEAT_MS {
+            let mut dead_reading = reading.clone();
+            dead_reading.health_state = HealthState::Dead;
+            dead_reading.health_reason = HealthReason::LostConnection;
+            dead_reading.manual_pickup_required = true;
+            dead_reading.heartbeat_age_ms = now_ms.saturating_sub(reading.timestamp_ms);
+            dead_reading.timestamp_ms = now_ms;
+            synthesized_dead.push(dead_reading);
+        }
+    }
+
+    if synthesized_dead.is_empty() {
+        return readings;
+    }
+
+    synthesized_dead.append(&mut readings);
+    synthesized_dead.truncate(MAX_READINGS);
+    synthesized_dead
+}
+
+fn speed_mismatch(reading: &TelemetryReading) -> f32 {
+    (reading.commanded_speed_kph - reading.actual_speed_kph).abs()
+}
+
+fn health_state_name(state: HealthState) -> &'static str {
+    match state {
+        HealthState::Healthy => "healthy",
+        HealthState::Unhealthy => "unhealthy",
+        HealthState::Dead => "dead",
+    }
+}
+
+fn parse_health_state(value: String) -> HealthState {
+    match value.as_str() {
+        "unhealthy" => HealthState::Unhealthy,
+        "dead" => HealthState::Dead,
+        _ => HealthState::Healthy,
+    }
+}
+
+fn health_reason_name(reason: HealthReason) -> &'static str {
+    match reason {
+        HealthReason::None => "none",
+        HealthReason::LowBattery => "low_battery",
+        HealthReason::OverheatedMotor => "overheated_motor",
+        HealthReason::SpeedMismatch => "speed_mismatch",
+        HealthReason::Jammed => "jammed",
+        HealthReason::LostConnection => "lost_connection",
+    }
+}
+
+fn parse_health_reason(value: String) -> HealthReason {
+    match value.as_str() {
+        "low_battery" => HealthReason::LowBattery,
+        "overheated_motor" => HealthReason::OverheatedMotor,
+        "speed_mismatch" => HealthReason::SpeedMismatch,
+        "jammed" => HealthReason::Jammed,
+        "lost_connection" => HealthReason::LostConnection,
+        _ => HealthReason::None,
+    }
 }
 
 fn authenticate_user(
@@ -678,6 +883,23 @@ mod tests {
         }
     }
 
+    fn sample_health_reading() -> TelemetryReading {
+        TelemetryReading {
+            vehicle_id: "rc-07".to_string(),
+            health_state: HealthState::Healthy,
+            health_reason: HealthReason::None,
+            battery_percent: 82.0,
+            heartbeat_age_ms: 1_000,
+            motor_temp_c: 52.0,
+            commanded_speed_kph: 18.0,
+            actual_speed_kph: 17.4,
+            jam_detected: false,
+            mission_area: "sector-a".to_string(),
+            manual_pickup_required: false,
+            timestamp_ms: 10_000,
+        }
+    }
+
     #[test]
     fn password_hash_accepts_correct_password_and_rejects_wrong_password() {
         let password_hash = hash_password(FIRST_RUN_PASSWORD).expect("hash first-run password");
@@ -768,6 +990,53 @@ mod tests {
         assert!(decode_token(&auth, "not-a-token").is_err());
     }
 
+    #[test]
+    fn stale_heartbeat_produces_dead_lost_connection_manual_pickup() {
+        let mut reading = sample_health_reading();
+        reading.heartbeat_age_ms = STALE_HEARTBEAT_MS;
+
+        normalize_reading(&mut reading);
+
+        assert_eq!(reading.health_state, HealthState::Dead);
+        assert_eq!(reading.health_reason, HealthReason::LostConnection);
+        assert!(reading.manual_pickup_required);
+    }
+
+    #[test]
+    fn missing_fresh_message_surfaces_known_vehicle_as_dead() {
+        let reading = sample_health_reading();
+        let readings = apply_freshness_states(vec![reading], 10_000 + STALE_HEARTBEAT_MS);
+
+        assert_eq!(readings[0].vehicle_id, "rc-07");
+        assert_eq!(readings[0].health_state, HealthState::Dead);
+        assert_eq!(readings[0].health_reason, HealthReason::LostConnection);
+        assert!(readings[0].manual_pickup_required);
+    }
+
+    #[test]
+    fn jam_detection_produces_unhealthy_jammed_manual_pickup() {
+        let mut reading = sample_health_reading();
+        reading.jam_detected = true;
+        reading.actual_speed_kph = 0.0;
+
+        normalize_reading(&mut reading);
+
+        assert_eq!(reading.health_state, HealthState::Unhealthy);
+        assert_eq!(reading.health_reason, HealthReason::Jammed);
+        assert!(reading.manual_pickup_required);
+    }
+
+    #[test]
+    fn healthy_reading_stays_healthy_without_manual_pickup() {
+        let mut reading = sample_health_reading();
+
+        normalize_reading(&mut reading);
+
+        assert_eq!(reading.health_state, HealthState::Healthy);
+        assert_eq!(reading.health_reason, HealthReason::None);
+        assert!(!reading.manual_pickup_required);
+    }
+
     #[tokio::test]
     async fn telemetry_rejects_missing_bearer_token() {
         let response = build_app(test_state())
@@ -781,6 +1050,23 @@ mod tests {
             .expect("response");
 
         assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[tokio::test]
+    async fn telemetry_post_is_not_an_ingest_route() {
+        let response = build_app(test_state())
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/api/telemetry")
+                    .header("content-type", "application/json")
+                    .body(Body::from("{}"))
+                    .expect("request"),
+            )
+            .await
+            .expect("response");
+
+        assert_eq!(response.status(), StatusCode::METHOD_NOT_ALLOWED);
     }
 
     #[tokio::test]
