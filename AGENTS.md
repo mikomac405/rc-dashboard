@@ -36,7 +36,7 @@ RC Smart Pit-Stop is a self-hosted dashboard MVP with a Rust Axum API, Rust MQTT
 
 ## Git and Review Notes
 
-- This repository currently has no commits and no remote configured, so no commit-message or PR convention is established.
+- This repository does not establish a separate commit-message or PR convention beyond the 10x phase and epilogue commit ritual.
 - Keep generated build output out of reviews unless the task explicitly asks for it; `frontend/dist/`, `frontend/node_modules/`, and Rust `target/` directories are local artifacts.
 
 <!-- BEGIN @przeprogramowani/10x-cli -->
