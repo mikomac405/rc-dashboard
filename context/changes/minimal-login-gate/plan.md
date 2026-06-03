@@ -316,13 +316,13 @@ If Postgres is unavailable, auth is unavailable by design. This is a deliberate 
 
 #### Automated
 
-- [x] 3.1 Backend build passes: `cargo build --manifest-path backend/Cargo.toml`
-- [x] 3.2 Backend tests pass: `cargo test --manifest-path backend/Cargo.toml`
-- [x] 3.3 Frontend build passes: `npm run build` in `frontend/`.
-- [x] 3.4 Frontend lint passes: `npm run lint` in `frontend/`.
+- [x] 3.1 Backend build passes: `cargo build --manifest-path backend/Cargo.toml` — 1102366
+- [x] 3.2 Backend tests pass: `cargo test --manifest-path backend/Cargo.toml` — 1102366
+- [x] 3.3 Frontend build passes: `npm run build` in `frontend/`. — 1102366
+- [x] 3.4 Frontend lint passes: `npm run lint` in `frontend/`. — 1102366
 
 #### Manual
 
-- [x] 3.5 Full local stack still starts with `docker compose up --build`.
-- [x] 3.6 Browser flow verifies login, forced password change, telemetry access, logout, and token-expiry/invalid-token recovery.
-- [x] 3.7 Public `/health` and unauthenticated `GET /api/telemetry` behavior are verified with curl or browser dev tools.
+- [x] 3.5 Full local stack still starts with `docker compose up --build`. — 1102366
+- [x] 3.6 Browser flow verifies login, forced password change, telemetry access, logout, and token-expiry/invalid-token recovery. — 1102366
+- [x] 3.7 Public `/health` and unauthenticated `GET /api/telemetry` behavior are verified with curl or browser dev tools. — 1102366
