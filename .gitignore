@@ -6,7 +6,5 @@ dist/
 .env.*
 !.env.example
 .railway/
-.agents/skills/10x*
-.agents/.10x*
-.agents/prompts
-.codex
+.agents/*
+.codex/*

@@ -1,8 +1,9 @@
 ---
 project: "RC Smart Pit-Stop"
-version: 1
+version: 3
 status: draft
 created: 2026-05-23
+updated: 2026-06-03
 context_type: greenfield
 product_type: web-app
 target_scale:
@@ -61,6 +62,30 @@ The fleet manager reaches for the product when they need to understand which veh
 - A connected vehicle that cannot move is treated as an unhealthy vehicle with a jammed reason and is marked for manual pickup instead of recall.
 - The dashboard does not apply a recall or manual-pickup action to a different vehicle than the one selected.
 
+### US-02: Fleet manager creates another fleet manager
+
+- **Given** a logged-in fleet manager using the dashboard
+- **When** they create a new fleet manager account
+- **Then** the new manager can log in and use the same flat MVP permissions as other fleet managers
+
+#### Acceptance Criteria
+
+- Manager creation happens inside the protected dashboard.
+- Newly created managers follow the same flat permission model as existing fleet managers.
+- The dashboard does not introduce mechanic profiles or role-based permissions for MVP.
+
+### US-03: Fleet manager creates a simulated vehicle
+
+- **Given** a logged-in fleet manager using the dashboard
+- **When** they create a new simulated vehicle record
+- **Then** the vehicle can appear in the fleet overview and participate in simulator-fed health monitoring
+
+#### Acceptance Criteria
+
+- Vehicle creation happens inside the protected dashboard.
+- Created vehicles use the existing simulated telemetry model for MVP.
+- The dashboard does not imply physical vehicle onboarding or integration.
+
 ## Functional Requirements
 
 - FR-001: Fleet manager can log in. Priority: must-have
@@ -77,6 +102,10 @@ The fleet manager reaches for the product when they need to understand which veh
   > Socrates: Counter-argument considered: "Manual pickup marking might be operational tracking rather than smart pit-stop logic." Resolution: revised; if a vehicle is dead because it lost connection, it should be automatically marked as dead for manual pickup.
 - FR-007: Fleet manager can see vehicle status updates from simulated fleet telemetry. Priority: must-have
   > Socrates: Counter-argument considered: "Fleet telemetry simulation may distract from dashboard UX if data generation becomes too complex." Resolution: kept; Fleet telemetry simulation is necessary because the MVP exists to shape vehicle telemetry and control needs.
+- FR-008: Fleet manager can create another fleet manager from the protected dashboard. Priority: should-have
+  > Scope note: kept behind the north-star intervention flow so account administration does not delay the first proof that fleet health monitoring works.
+- FR-009: Fleet manager can create a simulated vehicle from the protected dashboard. Priority: should-have
+  > Scope note: limited to simulated or managed vehicle records for MVP; physical vehicle integration remains outside scope.
 
 ## Non-Functional Requirements
 
@@ -84,6 +113,8 @@ The fleet manager reaches for the product when they need to understand which veh
 - Dead vehicles, movable unhealthy vehicles, and jammed unhealthy vehicles are visibly distinct before the fleet manager can take an action.
 - Only logged-in fleet managers can see telemetry and issue recalls.
 - The MVP dashboard works on desktop browsers only.
+- Automated verification checks run for backend, simulator, and frontend before MVP handoff.
+- Basic operational visibility exists through clear service logs, API errors, and dashboard offline/auth states sufficient to troubleshoot the MVP stack.
 
 ## Business Logic
 
@@ -101,6 +132,8 @@ Fleet managers log in to the dashboard.
 
 The MVP uses a flat user model: every logged-in fleet manager has the same permissions.
 
+Newly created fleet managers use the same flat permission model for MVP.
+
 Mechanic profiles are not included in the MVP.
 
 ## Non-Goals
@@ -112,6 +145,8 @@ Mechanic profiles are not included in the MVP.
 - No severity ranking in MVP; severity ranking is a future-scale concern for larger fleets.
 - No physical vehicle integration yet; Fleet telemetry data is simulated.
 - No mobile dashboard support; the MVP targets desktop browsers only.
+- No auto-deploy pipeline or infrastructure-as-code automation in MVP; verification automation is enough.
+- No deep observability stack in MVP; structured logs and clear runtime states are enough unless telemetry gaps block verification.
 
 ## Open Questions
 
